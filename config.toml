@@ -1,0 +1,5 @@
+# Configuration created as commits are made and features are implemented.
+
+[redis]
+url = "redis://:okteto123@127.0.0.1:6379"
+prefix = "kubecrafter" # Without dot "." at the end
