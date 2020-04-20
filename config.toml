@@ -1,5 +1,156 @@
+#  _   __      _          _____            __ _
+# | | / /     | |        /  __ \          / _| |
+# | |/ / _   _| |__   ___| /  \/_ __ __ _| |_| |_ ___ _ __
+# |    \| | | | '_ \ / _ | |   | '__/ _` |  _| __/ _ | '__|
+# | |\  | |_| | |_) |  __| \__/| | | (_| | | | ||  __| |
+# \_| \_/\__,_|_.__/ \___|\____|_|  \__,_|_|  \__\___|_|
+#
+# KubeCrafter by FuseTim <fusetim@gmx.com>
+
 # Configuration created as commits are made and features are implemented.
 
+## Redis section
 [redis]
-url = "redis://:okteto123@127.0.0.1:6379"
-prefix = "kubecrafter" # Without dot "." at the end
+# The URL of the Redis server. Must be formatted like this: `redis://[:password@]host[:port]`
+url = "redis://:password@redis.domain.tld"
+# The prefix to use with Redis. The end point should not be written here.
+prefix = "kubecrafter"
+
+## Namespaces section
+
+# Declaring a new namespace
+[[namespace]]
+    # The name of the namespace (should be the same in the kube config [$HOME/.kube/config])
+    kname = "proxy_and_hub"
+
+    # Declaring a new (Stateful)set
+    [[namespace.set]]
+        # The name of the statefulset (should be the same in the Kubernetes namespace)
+        kname = "bungeecord"
+        # Define if the server is a proxy (like Bungeecord)
+        proxy = true
+        # Define the number of already connected servers outside the cluster (running in a VPS/Dedicated Server for example)
+        already_connected = 0
+        # Set the number of players that can join a server (must be close to (and less than or equal to)
+        # the maximum limit of the server itself.
+        players_per_server = 250
+
+        # Declaring a lot of strategies
+        [[namespace.set.strategies]] # When the server network (i.e. proxy servers) is empty.
+            # When there's nobody on the proxies. (min & max = 0)
+            min_proxy_player = 0
+            max_proxy_player = 0
+            # Make one server running
+            backup_server = 1
+        [[namespace.set.strategies]] # When the network of servers (i.e. proxy servers) is almost empty.
+            # Between 1 to 10 players on proxies (here proxies and per-set players are the same)
+            min_player = 1
+            max_player = 10
+            # Don't run more servers than necessary, just use 1 server ( 10 < 50 )
+            backup_server = 0
+        [[namespace.set.strategies]] # When proxy servers have between 11 and 250 players (on the servers/proxies)
+            min_player = 11
+            max_player = 250
+            # Launch one more server than necessary.
+            backup_server = 1
+        [[namespace.set.strategies]] # When proxy servers have more than 250 players (on the servers/proxies)
+            min_player = 251
+            # Launch two more server than necessary.
+            backup_server = 2
+    # Declaring a new (Stateful)set
+    [[namespace.set]]
+        # The name of the statefulset (should be the same in the Kubernetes namespace)
+        kname = "hub"
+        # Define if the server is a proxy (like Bungeecord)
+        proxy = false
+        # Define the number of already connected servers outside the cluster (running in a VPS/Dedicated Server for example)
+        already_connected = 0
+        # Set the number of players that can join a server (must be close to (and less than or equal to)
+        # the maximum limit of the server itself.
+        players_per_server = 50
+        [[namespace.set.strategies]] # When the server network (i.e. proxy servers) is empty.
+            # When there's nobody on the proxies. (min & max = 0)
+            min_proxy_player = 0
+            max_proxy_player = 0
+            # Make one server running
+            backup_server = 1
+        [[namespace.set.strategies]] # When the network of servers (i.e. proxy servers) is almost empty.
+            # Between 1 to 10 players on proxies (here proxies and per-set players are the same)
+            min_player = 1
+            max_player = 10
+            # Don't run more servers than necessary, just use 1 server ( 10 < 50 )
+            backup_server = 0
+        [[namespace.set.strategies]]  # When proxy servers have between 11 and 250 players (on the servers/proxies)
+            min_player = 11
+            max_player = 200
+            # Run one more server than necessary
+            backup_server = 1
+        [[namespace.set.strategies]]  # When proxy servers have more than 200 players (on the servers/proxies)
+            min_player = 201
+            # Run two more server than necessary
+            backup_server = 2
+
+# Minigame namespace
+# Make some Rush servers for example
+[[namespace]]
+    kname = "minigames"
+    [[namespace.set]]
+        kname = "rush-4x1"
+        proxy = false
+        already_connected = 0
+        players_per_server = 4
+        [[namespace.set.strategies]]
+            min_proxy_player = 0
+            max_proxy_player = 0
+            backup_server = 0
+        [[namespace.set.strategies]]
+            min_proxy_player = 1
+            max_player = 16
+            backup_server = 1
+        [[namespace.set.strategies]]
+            min_player = 17
+            max_player = 64
+            backup_server = 2
+        [[namespace.set.strategies]]
+            min_player = 65
+            backup_server = 4
+    [[namespace.set]]
+        kname = "rush-4x2"
+        proxy = false
+        already_connected = 0
+        players_per_server = 8
+        [[namespace.set.strategies]]
+            min_proxy_player = 0
+            max_proxy_player = 0
+            backup_server = 0
+        [[namespace.set.strategies]]
+            min_proxy_player = 1
+            max_player = 32
+            backup_server = 1
+        [[namespace.set.strategies]]
+            min_player = 33
+            max_player = 128
+            backup_server = 2
+        [[namespace.set.strategies]]
+            min_player = 129
+            backup_server = 4
+    [[namespace.set]]
+        kname = "rush-4x4"
+        proxy = false
+        already_connected = 0
+        players_per_server = 16
+        [[namespace.set.strategies]]
+            min_proxy_player = 0
+            max_proxy_player = 0
+            backup_server = 0
+        [[namespace.set.strategies]]
+            min_proxy_player = 1
+            max_player = 32
+            backup_server = 1
+        [[namespace.set.strategies]]
+            min_player = 33
+            max_player = 64
+            backup_server = 2
+        [[namespace.set.strategies]]
+            min_player = 65
+            backup_server = 4
