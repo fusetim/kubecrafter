@@ -1,10 +1,10 @@
+use failure::Fallible;
+use serde_derive::Deserialize;
 use tokio::fs::File;
 use tokio::prelude::*;
-use serde_derive::Deserialize;
-use failure::Fallible;
 
 /// Configuration file representation
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct Config {
     /// The redis section
     pub redis: RedisSection,
@@ -13,36 +13,36 @@ pub struct Config {
 }
 
 /// Redis section representation (from the config file)
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct RedisSection {
     /// The prefix to use when storing data in redis
     prefix: Option<String>,
     /// The redis server URL (eg: `redis://:password@redis.domain.tld`
-    pub url: String
+    pub url: String,
 }
 
 /// Namespace declaration (from the config file)
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct Namespace {
     /// The kubernetes name
-    kname: String,
+    pub kname: String,
     /// The StatefulSets
-    set: Vec<Set>,
+    pub set: Vec<Set>,
 }
 
 /// Set declaration (from the config file)
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct Set {
     /// The kubernetes name
-    kname: String,
+    pub kname: String,
     /// Is this set, a proxy server (like Bungeecord)
-    proxy: bool,
+    pub proxy: bool,
     /// Number of server already started outside of this cluster (like on a VPS/Dedicated Server)
-    already_connected: u32,
+    pub already_connected: u32,
     /// The maximum player on one instance
-    players_per_server: u32,
+    pub players_per_server: u32,
     /// The strategies to use to scale up/down the set
-    strategies: Vec<Strategy>,
+    pub strategies: Vec<Strategy>,
 }
 
 impl Set {
@@ -50,19 +50,19 @@ impl Set {
     pub fn get_replicas(&self, proxy_player: u32, set_players: u32) -> u32 {
         // Determines the number of backup servers required according to the current strategy
         let backup = self.strategies.iter()
-            .find(|s | s.is_applied(proxy_player, set_players))
+            .find(|s| s.is_applied(proxy_player, set_players))
             .map(|s| s.backup_server)
             .unwrap_or(1u32);
         // Calculate the minimum number of servers needed to support the current load
         let needed = (set_players as f64 / (self.players_per_server as f64)).ceil() as u32;
         // Calculate the number of replicas required, taking into account non-cluster servers and backup replicas.
-        needed+backup-self.already_connected
+        needed + backup - self.already_connected
     }
 }
 
 /// Strategy declaration (from the config file)
 /// Determines the number of backup servers to launch according to the number of players in the set and the proxies.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct Strategy {
     /// The threshold (min) of players connected to the proxies from which to activate the strategy
     min_proxy_player: Option<u32>,
@@ -85,7 +85,7 @@ impl Strategy {
         let max = self.max_player.unwrap_or(u32::max_value());
 
         // Check that there are the necessary players to activate the strategy.
-        minp <= proxy_players &&  proxy_players <= maxp && min <= set_players && set_players <= max
+        minp <= proxy_players && proxy_players <= maxp && min <= set_players && set_players <= max
     }
 }
 
@@ -94,7 +94,7 @@ impl RedisSection {
     pub fn prefix(&self) -> String {
         match &self.prefix {
             // Attach the ending point to the existing prefix and return.
-            Some(prefix) => prefix.to_owned()+".",
+            Some(prefix) => prefix.to_owned() + ".",
             // When no prefix is used, just return an empty string.
             _ => String::new(),
         }
@@ -110,6 +110,6 @@ pub async fn get_config() -> Fallible<Config> {
     conf.read_to_end(&mut contents).await?;
 
     // Parse file
-    let conf : Config = toml::from_slice(&contents)?;
+    let conf: Config = toml::from_slice(&contents)?;
     Ok(conf)
 }
